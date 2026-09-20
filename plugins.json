@@ -1,14 +1,13 @@
 [
   {
-    "name": "AnimeDekho",
-    "description": "Hindi Dubbed Anime Movies & Series",
+    "name": "HDHub4u",
+    "description": "HDHub4u - Hindi Dubbed Movies & Web Series",
     "version": 1,
-    "url": "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Anime-dekho-scrapper-fork/builds/AnimeDekhoProvider.cs3",
-    "iconUrl": "https://animedekho.app/favicon.ico",
+    "url": "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-/builds/HdHub4uProvider.cs3",
+    "iconUrl": "https://new6.hdhub4u.cl/favicon.ico",
     "authors": ["moviesallwatchdowanload-web"],
     "language": "hi",
-    "tvTypes": ["Movie", "TvSeries", "Anime", "AsianDrama"],
+    "tvTypes": ["Movie", "TvSeries"],
     "status": 1
   }
 ]
-

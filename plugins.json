@@ -1,0 +1,25 @@
+[
+    {
+        "iconUrl": "https://new6.hdhub4u.cl/favicon.ico",
+        "jarFileSize": 129529,
+        "fileHash": "sha256-3cd2c4360130fdcb37316844c391a69f98e60630a893214e45fe8a42ec57f9a7",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-",
+        "fileSize": 31197,
+        "status": 1,
+        "authors": [
+            "moviesallwatchdowanload-web"
+        ],
+        "tvTypes": [
+            "Movie",
+            "TvSeries"
+        ],
+        "version": 1,
+        "internalName": "HdHub4uProvider",
+        "jarUrl": "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-/builds/HdHub4uProvider.jar",
+        "description": "HDHub4u - Hindi Dubbed Movies & Web Series",
+        "url": "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-/builds/HdHub4uProvider.cs3",
+        "name": "HdHub4uProvider",
+        "jarHash": "sha256-243a0dbb198df0e1eabaa27b6a159fe0a1b522a3740de0d1179fd43e3464202a"
+    }
+]

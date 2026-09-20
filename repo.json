@@ -1,0 +1,7 @@
+{
+    "name": "AnimeDekho Repo",
+    "manifestVersion": 1,
+    "pluginLists": [
+      "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Anime-dekho-scrapper-fork/builds/plugins.json"
+    ]
+}

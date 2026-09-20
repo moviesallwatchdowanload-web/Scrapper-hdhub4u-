@@ -1,0 +1,13 @@
+[
+  {
+    "name": "AnimeDekho",
+    "description": "Hindi Dubbed Anime Movies & Series",
+    "version": 1,
+    "url": "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Anime-dekho-scrapper-fork/builds/AnimeDekhoProvider.cs3",
+    "iconUrl": "https://animedekho.app/favicon.ico",
+    "authors": ["moviesallwatchdowanload-web"],
+    "language": "hi",
+    "tvTypes": ["Movie", "TvSeries", "Anime", "AsianDrama"],
+    "status": 1
+  }
+]

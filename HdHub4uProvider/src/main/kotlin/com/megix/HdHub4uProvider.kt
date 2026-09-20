@@ -274,15 +274,7 @@ open class HdHub4uProvider : MainAPI() {
         val sources = com.lagradost.cloudstream3.utils.AppUtils.parseJson<ArrayList<EpisodeLink>>(data)
         sources.amap {
             val source = it.source
-            when {
-                source.contains("vcloud", true) -> VCloud().getUrl(source, "", subtitleCallback, callback)
-                source.contains("hubcloud", true) -> HubCloud().getUrl(source, "", subtitleCallback, callback)
-                source.contains("gofile", true) -> Gofile().getUrl(source, "", subtitleCallback, callback)
-                source.contains("gdflix", true) -> Gdflix().getUrl(source, "", subtitleCallback, callback)
-                source.contains("filepress", true) -> Filepress().getUrl(source, "", subtitleCallback, callback)
-                source.contains("streamhg", true) -> Streamhg().getUrl(source, "", subtitleCallback, callback)
-                else -> loadExtractor(source, "", subtitleCallback, callback)
-            }
+            loadExtractor(source, "", subtitleCallback, callback)
         }
         return true
     }

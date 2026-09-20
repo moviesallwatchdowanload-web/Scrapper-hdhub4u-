@@ -1,8 +1,8 @@
-# HdHub4u CloudStream3 Plugin
+# Cloudstream extensions
 
-Movies + Series scraper for hdhub4u.cl with TMDB enrichment.
+This repository contains a collection of extensions for [Cloudstream3](https://github.com/recloudstream/cloudstream)
 
-## Build
-```bash
-pkg install git gradle openjdk-17 -y
-gradle HdHub4uProvider:assembleDebug
+## Attribution
+
+The gradle plugin and the whole plugin system is **heavily** based on [Aliucord](https://github.com/Aliucord).
+*Go use it, it's a great mobile discord client mod!*

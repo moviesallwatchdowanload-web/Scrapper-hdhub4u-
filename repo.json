@@ -2,6 +2,6 @@
     "name": "HDHub4u Repo",
     "manifestVersion": 1,
     "pluginLists": [
-      "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-/main/plugins.json"
+      "https://raw.githubusercontent.com/moviesallwatchdowanload-web/Scrapper-hdhub4u-/builds/plugins.json"
     ]
 }

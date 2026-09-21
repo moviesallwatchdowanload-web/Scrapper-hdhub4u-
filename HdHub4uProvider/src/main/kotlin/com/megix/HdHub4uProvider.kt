@@ -27,16 +27,15 @@ open class HdHub4uProvider : MainAPI() {
         "$mainUrl/page/%d/" to "Home",
         "$mainUrl/category/bollywood-movies/page/%d/" to "Bollywood Movies",
         "$mainUrl/category/hollywood-movies/page/%d/" to "Hollywood Movies",
-        "$mainUrl/category/hollywood-hindi-dubbed/page/%d/" to "Hollywood Hindi Dubbed",
-        "$mainUrl/category/south-indian-movies/page/%d/" to "South Indian Movies",
-        "$mainUrl/category/web-series/netflix/page/%d/" to "Netflix Series",
-        "$mainUrl/category/web-series/disney-plus-hotstar/page/%d/" to "Disney+ Series",
-        "$mainUrl/category/web-series/amazon-prime-video/page/%d/" to "Amazon Prime Series",
-        "$mainUrl/category/web-series/mx-original/page/%d/" to "MX Original Series",
-        "$mainUrl/category/anime-series/page/%d/" to "Anime Series",
-        "$mainUrl/category/korean-series/page/%d/" to "Korean Series",
-        "$mainUrl/category/pakistan-punjabi-movies/page/%d/" to "Punjabi Movies",
-        "$mainUrl/category/4k-movies/page/%d/" to "4K Movies"
+        "$mainUrl/category/hindi-dubbed/page/%d/" to "Hindi Dubbed",
+        "$mainUrl/category/south-hindi-movies/page/%d/" to "South Indian Movies",
+        "$mainUrl/category/category/web-series/page/%d/" to "Web Series",
+        "$mainUrl/category/action-movies/page/%d/" to "Action",
+        "$mainUrl/category/romantic-movies/page/%d/" to "Romance",
+        "$mainUrl/category/horror-movies/page/%d/" to "Horror",
+        "$mainUrl/category/animated-movies/page/%d/" to "Animated",
+        "$mainUrl/category/punjabi/page/%d/" to "Punjabi",
+        "$mainUrl/category/hd-movies/page/%d/" to "HD Movies"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
@@ -56,15 +55,7 @@ open class HdHub4uProvider : MainAPI() {
         if (rawTitle.isBlank()) rawTitle = anchor.text().trim()
         if (rawTitle.isBlank()) return null
 
-        // Clean title: remove year onwards, tags
-        var title = rawTitle
-            .replace(Regex("""\s*\(\d{4}\).*$"""), "")
-            .replace(Regex("""\s*(WEB-DL|HQ-HDTC|HDTC|DS4K|UNCUT|V2|iMAX).*$""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\s*\|.*$"""), "")
-            .replace(Regex("""\s+Download\s+"""), " ")
-            .replace("Download ", "")
-            .trim()
-        if (title.isBlank()) title = rawTitle
+        val title = cleanTitle(rawTitle)
 
         var poster = img.attr("src")
         if (poster.isBlank() || !poster.startsWith("http")) poster = img.attr("data-src")
@@ -77,12 +68,29 @@ open class HdHub4uProvider : MainAPI() {
         }
     }
 
+    private fun cleanTitle(raw: String): String {
+        return raw
+            .replace(Regex("""\s*\(\d{4}\).*$"""), "")
+            .replace(Regex("""\s*(WEB-DL|HQ-HDTC|HDTC|DS4K|UNCUT|V\d|iMAX|HDCAM|PRE-DVD|WEBRip|BluRay).*$""", RegexOption.IGNORE_CASE), "")
+            .replace(Regex("""\s*\|.*$"""), "")
+            .replace(Regex("""\s+Download\s+"""), " ")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+    }
+
     override suspend fun search(query: String, page: Int): SearchResponseList? {
         val enc = java.net.URLEncoder.encode(query, "UTF-8")
-        // Actual search endpoint: /search.html?q=query
-        val url = if (page == 1) "$mainUrl/search.html?q=$enc" else "$mainUrl/search.html?q=$enc&page=$page"
+        // Actual: /search.html?q=query  OR /search/query/
+        val url = "$mainUrl/search.html?q=$enc"
         val doc = app.get(url, headers = mapOf("User-Agent" to ua)).document
-        val results = doc.select("li.thumb").mapNotNull { it.toSearchResult() }
+        var results = doc.select("li.thumb").mapNotNull { it.toSearchResult() }
+
+        // Fallback: /search/query/
+        if (results.isEmpty()) {
+            val doc2 = app.get("$mainUrl/search/$enc/", headers = mapOf("User-Agent" to ua)).document
+            results = doc2.select("li.thumb").mapNotNull { it.toSearchResult() }
+        }
+
         return newSearchResponseList(results, hasNext = results.isNotEmpty())
     }
 
@@ -90,11 +98,7 @@ open class HdHub4uProvider : MainAPI() {
         val doc = app.get(url, headers = mapOf("User-Agent" to ua)).document
 
         val rawTitle = doc.selectFirst("h1.page-title, h1.entry-title, h1")?.text()?.trim() ?: return null
-        val title = rawTitle
-            .replace(Regex("""\s*Download\s*"""), " ")
-            .replace(Regex("""\s*(WEB-DL|HQ-HDTC|HDTC).*$""", RegexOption.IGNORE_CASE), "")
-            .replace(Regex("""\s*\|.*$"""), "")
-            .trim()
+        val title = cleanTitle(rawTitle)
         val poster = doc.selectFirst("meta[property=og:image]")?.attr("content")
             ?: doc.selectFirst("div.entry-content img, article img")?.attr("src")
         val plot = doc.selectFirst("meta[name=description]")?.attr("content")
@@ -102,40 +106,33 @@ open class HdHub4uProvider : MainAPI() {
         val year = Regex("""(19|20)\d{2}""").find(rawTitle)?.value?.toIntOrNull()
 
         val imdbUrl = doc.selectFirst("a[href*=imdb.com/title/]")?.attr("href") ?: ""
-        val genres = doc.select("a[href*=category]").map { it.text() }.filter { it.length < 30 }.distinct()
+        val genres = doc.select("a[href*=category]").map { it.text().trim() }.filter { it.length in 2..30 }.distinct()
 
-        // Cast extraction
+        // Cast
         val cast = mutableListOf<String>()
-        doc.selectFirst("strong:contains(Stars)")?.let { starStrong ->
-            val parentText = starStrong.parent()?.text() ?: ""
-            val starsPart = parentText.substringAfter("Stars:", "").substringBefore("Director").trim()
-            if (starsPart.isNotBlank()) {
-                starsPart.split(",").forEach { cast.add(it.trim()) }
-            }
+        doc.selectFirst("strong:contains(Stars)")?.let { s ->
+            val parentTxt = s.parent()?.text() ?: ""
+            val starsPart = parentTxt.substringAfter("Stars:", "").substringBefore("Director").trim()
+            if (starsPart.isNotBlank()) starsPart.split(",").forEach { cast.add(it.trim()) }
         }
 
-        // Detect series: title has "season" or url contains "series" or episodes present
-        val isSeries = rawTitle.contains(Regex("""(?i)(season|series)""")) || url.contains("/series")
-                || doc.select("a[href*=hubstream.art/#]").size > 3
+        // SERIES detection
+        val hubstreamLinks = doc.select("a[href*=hubstream.art]")
+        val isSeries = rawTitle.contains(Regex("""(?i)(season|series)""")) || url.contains("/series") || hubstreamLinks.size > 2
 
-        if (isSeries) {
-            // Episodes in hubstream.art/#xxx links
-            val epLinks = doc.select("a[href*=hubstream.art/#]")
-                .mapNotNull { a ->
-                    val epUrl = a.attr("href").takeIf { it.isNotBlank() } ?: return@mapNotNull null
-                    val epTitle = a.text().trim().ifBlank { "Episode" }
-                    epUrl to epTitle
-                }
-                .distinctBy { it.first }
+        if (isSeries && hubstreamLinks.isNotEmpty()) {
+            // Each hubstream link = episode
+            val episodes = hubstreamLinks.distinctBy { it.attr("href") }.mapIndexed { idx, a ->
+                val epUrl = a.attr("href")
+                val epTitle = a.text().trim().ifBlank { "Episode ${idx + 1}" }
+                val epNum = Regex("""(\d+)""").find(epTitle)?.groupValues?.get(1)?.toIntOrNull() ?: (idx + 1)
 
-            if (epLinks.isNotEmpty()) {
-                val episodes = epLinks.mapIndexed { idx, (epUrl, epTitle) ->
-                    val epNum = Regex("""(\d+)""").find(epTitle)?.groupValues?.get(1)?.toIntOrNull() ?: (idx + 1)
-                    newEpisode(EpisodeLink(epUrl, epTitle)) {
-                        this.name = epTitle
-                        this.episode = epNum
-                    }
+                newEpisode(EpisodeLink(epUrl, epTitle)) {
+                    this.name = epTitle
+                    this.episode = epNum
                 }
+            }
+            if (episodes.isNotEmpty()) {
                 return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
                     this.posterUrl = poster
                     this.plot = plot
@@ -147,8 +144,8 @@ open class HdHub4uProvider : MainAPI() {
             }
         }
 
-        // Movie — find hdstream4u link
-        val movieLinks = doc.select("a[href*=hdstream4u], a[href*=hubstream.art/#]")
+        // MOVIE — hdstream4u link
+        val movieLinks = doc.select("a[href*=hdstream4u], a[href*=hubstream.art]")
             .mapNotNull { a ->
                 val href = a.attr("href").takeIf { it.isNotBlank() } ?: return@mapNotNull null
                 val name = a.text().trim().ifBlank { "Server" }
@@ -183,27 +180,26 @@ open class HdHub4uProvider : MainAPI() {
                 val url = link.source
                 val label = link.name
 
+                // Method 1: Direct extractor
                 try {
-                    // Try 1: direct loadExtractor
                     loadExtractor(url, mainUrl, subtitleCallback, callback)
-                } catch (e: Exception) {
-                    Log.e("HDHub4u", "loadExtractor failed: ${e.message}")
-                }
+                } catch (e: Exception) { }
 
-                // Try 2: for hdstream4u / hubstream — fetch page and extract m3u8
+                // Method 2: hdstream4u / hubstream — fetch and extract
                 if (url.contains("hdstream4u", true) || url.contains("hubstream", true)) {
                     try {
-                        val headers = mapOf("User-Agent" to ua, "Referer" to url)
+                        val headers = mapOf("User-Agent" to ua, "Referer" to mainUrl)
                         val doc = app.get(url, headers = headers).document
 
                         // Direct iframe
-                        doc.selectFirst("iframe[src]")?.attr("src")?.let { iframeSrc ->
-                            if (iframeSrc.isNotBlank() && !iframeSrc.startsWith("about:")) {
-                                loadExtractor(iframeSrc, url, subtitleCallback, callback)
+                        doc.select("iframe[src]").amap { iframe ->
+                            val src = iframe.attr("src")
+                            if (src.isNotBlank() && !src.startsWith("about:") && !src.contains("youtube")) {
+                                loadExtractor(src, url, subtitleCallback, callback)
                             }
                         }
 
-                        // Packed JS decode
+                        // Packed JS decode for m3u8
                         val html = doc.html()
                         val evalIdx = html.indexOf("eval(function(p,a,c,k,e,d)")
                         if (evalIdx >= 0) {
@@ -221,7 +217,7 @@ open class HdHub4uProvider : MainAPI() {
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("HDHub4u", "hdstream4u failed: ${e.message}")
+                        Log.e("HDHub4u", "stream extraction failed: ${e.message}")
                     }
                 }
             }
